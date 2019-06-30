@@ -28,6 +28,26 @@ def remove_punctuation(s):
     return re.sub(' +',' ',s.translate(tbl_punctuation).lower()).strip()
 
 
+#remove "HULKPOP" from filename
+def cleanup_hulkpop(dir):
+    for f in os.scandir(dir):
+        if f.is_dir():
+            cleanup_hulkpop(f)
+        newname = re.sub(r'\s*\[?HULKPOP(\.COM)?\]?\s*', ' ', f.name, 0, re.IGNORECASE)
+        if f.name != newname:
+            try:
+                f1, f2 = os.path.splitext(newname)
+                f1 = f1.strip('- ').lstrip('.')
+                newname = f1 + f2
+                # print(f.path, '=>', os.path.join(dir, newname))
+                os.rename(f.path, os.path.join(dir, newname))
+            except:
+                pass
+
+
+
+##main
+
 artist_list={}
 
 if args.artist_list and os.path.exists(args.artist_list):
@@ -46,7 +66,7 @@ for dir in os.scandir(args.source_dir):
         name = dir.name.strip()
         title = name.replace((b'\xc3\xa2\xe2\x82\xac\xe2\x80\x9c').decode('utf-8'), '-')
         title = re.sub(' \(Zip\)$', '', title)
-        title2 = re.sub("\s*\[[^]]+]\s*", "", title)
+        title2 = re.sub("^\s*\[[^]]+]\s*", "", title)
 
         artist=re.sub("\s+"+delimiter+"\s+.*","", title2)
         if artist==title2:
@@ -59,8 +79,8 @@ for dir in os.scandir(args.source_dir):
         if artist==title2:
             artist="Others"
         artist=artist.strip()
-        if re.match("^\d+$", artist):
-            artist="Others"
+        # if re.match("^\d+$", artist):
+        #     artist="Others"
         if artist=='VA' or artist=='V.A':
             artist='Various Artists'
 
