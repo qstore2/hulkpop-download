@@ -32,7 +32,7 @@ artist_list={}
 
 if args.artist_list and os.path.exists(args.artist_list):
     for l in open(args.artist_list, "r", encoding="utf-8").readlines():
-        artist_list[remove_punctuation(l)] = l
+        artist_list[remove_punctuation(l)] = l.strip()
 
 # print(artist_list)
 artist_list.update({remove_punctuation(d.name):d.name for d in os.scandir(args.dest_dir) if d.is_dir()})
