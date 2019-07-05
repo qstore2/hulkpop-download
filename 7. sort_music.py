@@ -12,9 +12,6 @@ import argparse
 import unicodedata
 from pprint import pprint
 
-rclone_arg1='qstore122_redtopia_to:FLAC/!to_sort/'
-rclone_arg2='qstore122_redtopia_to:FLAC/'
-
 parser = argparse.ArgumentParser()
 parser.add_argument('source_dir')
 parser.add_argument('dest_dir')

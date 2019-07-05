@@ -1,3 +1,4 @@
 dask
 pandas
 beautifulsoup4
+send2trash

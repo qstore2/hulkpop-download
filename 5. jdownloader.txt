@@ -4,6 +4,7 @@ Install "Folder Watch"
 Set the folder for folder watch
 Set the download location to "C:\hulkpop\<jd:packagename>"
 Set auto extract, auto delete after extract
+Set auto extract password to "hulkpop.com" 
 Set whatever else options you want
 Goto LinkGrabber, on the bottom right click the arrow beside the tool, select auto-confirm
 Copy the crawljob files batch by batch into the folder watch

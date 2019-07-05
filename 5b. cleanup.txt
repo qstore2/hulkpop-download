@@ -1,0 +1,66 @@
+# understand each line and manually run every command. Change the command according to your needs (and fix any error alone the way)
+
+# install https://github.com/sharkdp/fd
+
+# cd to a tmp folder
+# move the folders as such:
+# - added <- all the crawljob files
+# - mp3 <- directories where jd2 download
+# - unzip <- directories where jd2 unzip to
+# - zip <- empty
+
+
+
+cat << EOF > mvfile.sh
+#!/bin/sh
+file="../zip/$1"
+dir="$(dirname "$file")"
+[ -a "$dir" ] || mkdir -p "$dir" && mv "$1" "$file"
+EOF
+
+
+
+
+cd mp3
+fd -tf "\.(part|torrent|url)$"
+fd -tf "\.(part|torrent|url)$" -X rm
+fd -tf "\.(7z|zip|rar)$" 
+fd -tf "\.(7z|zip|rar)$" -0 | xargs -t0 -l ../mvfile.sh
+
+#run a few times
+fd -td -te -X rm -rf
+
+
+cd unzip
+fd -tf "\.(part|torrent|url)$" -X rm
+
+#run a few times
+fd -td -te -X rm -rf
+
+
+
+
+ls mp3 > done-mp3.txt
+ls unzip > done-unzip.txt
+ls zip > done-zip.txt
+
+#where is your 7z program?
+zip=/bin/7z
+
+grep -vxFf <(cat done-mp3*.txt done-unzip*.txt) done-zip.txt > tounzip.txt
+cat tounzip.txt|while read l;do echo ---$l---;"$zip" x -aos -phulkpop.com -o"unzip-2\\$l" "zip\\$l\\*";done
+
+
+
+ls unzip-2 > done-unzip-2.txt
+
+cat done-mp3* done-unzip*|sort|uniq > done.txt
+grep -h packageName added/* |dos2unix|sort > packages.txt
+cat packages.txt|awk '{a=substr($0,13);gsub(/[\/:?*><|]+/, "_", a);print $0"|"a}'|sort|uniq > packages-title.txt
+grep -vFf done.txt packages-title.txt > packages-notdone.txt
+mkdir added-notdone added-videos
+cat packages-notdone.txt | cut -f1 -d'|' | grep -l -Ff - added*/* -Z | xargs -0 mv -t added-notdone/
+egrep -l "^\[(DVD|Concert|Show|BD|Blu|Collect|Live)" added-notdone/* -Z | xargs -0 mv -t added-videos/
+
+
+

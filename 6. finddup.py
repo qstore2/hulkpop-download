@@ -7,6 +7,7 @@ from send2trash import send2trash
 
 ### edit as needed
 print_detail=True
+confirm_delete=True
 
 
 
@@ -26,10 +27,14 @@ def gettrack(f):
     if m:
         return int(m[0])
 
+def getext(f):
+    return os.path.splitext(f)[1]
+
 def getsize(row):
     f = os.path.join(root,row['dir'],row['file'])
     row['size'] = os.path.getsize(f)
     return row
+
 
 
 re_korean = re.compile(r'[\u3130-\u318F\uAC00-\uD7AF\u1100–\u11FF]')
@@ -62,42 +67,43 @@ allfiles = [[d[len(root)+1:],f] for d,_,files in os.walk(root) for f in files]
 dd = pd.DataFrame(allfiles, columns=['dir','file'])
 dd['album'] = dd['file'].apply(getalbum)
 dd['track'] = dd['file'].apply(gettrack)
+dd['ext'] = dd['file'].apply(getext)
 dd['size']=None
 dd = dd[~dd['track'].isnull()]
 
 
-dup = dd[dd.duplicated(['dir','album','track'], keep=False)]
+dup = dd[dd.duplicated(['dir','album','track','ext'], keep=False)]
 dup = dup.apply(getsize, axis=1)
 dup['len'] = dup['file'].apply(lambda f: len(f))
 dup['fullname'] = dup[['dir', 'file']].apply(lambda s:'/'.join(s), axis=1)
 dup = dup.sort_values(['dir','album','track','len','file'])
-dup2 = dup[dup.duplicated(['dir','album','track','size'], keep=False)]
+dup2 = dup[dup.duplicated(['dir','album','track','ext','size'], keep=False)]
 
 
 best = pd.DataFrame(columns=dup.columns)
-for n,g in dup2.groupby(['dir','album','track','size']):
+for n,g in dup2.groupby(['dir','album','track','ext','size']):
     best = best.append(select_best(g))
 
 # print('to keep:\n===========')
 # print(best[['dir', 'file']].apply(lambda s:'/'.join(s), axis=1))
 # print(best['fullname'])
-best['fullname'].to_csv('dups/tokeep.csv', header=True)
+best['fullname'].to_csv('dups/tokeep.csv', header=False, index=False)
 
 
 toremove = dup2[~dup2.index.isin(best.index)]
 # print('\nto remove:\n===========')
 # print(toremove['fullname'])
-toremove['fullname'].to_csv('dups/toremove.csv', header=True)
 # print(toremove[['dir', 'file']].apply(lambda s:'/'.join(s), axis=1))
-# for i,row in toremove[['fullname']].iterrows():
-#     fn = os.path.normpath(os.path.join(root,'/'.join(row)))
-#     print(fn)
-#     send2trash(fn)
+toremove['fullname'].to_csv('dups/toremove.csv', header=False, index=False)
+if confirm_delete:
+    for i,row in toremove[['fullname']].iterrows():
+        fn = os.path.normpath(os.path.join(root,'/'.join(row)))
+        send2trash(fn)
 
 
 print('\nduplicate dir:\n===========')
 dup3 = dup[~dup.index.isin(dup2.index)]
 dup3 = dup3.drop_duplicates('dir')
+dup3['dir'].to_csv('dups/dup_dir.csv', header=False, index=False)
 print(dup3['dir'])
-dup3['dir'].to_csv('dups/dup_dir.csv', header=True)
 # print(dup.drop_duplicates().to_string(index=False))
