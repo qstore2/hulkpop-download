@@ -38,6 +38,9 @@ def getlinks(row):
 
         types = defaultdict(list)
         for l in links:
+            if l.get('class') and 'sd-button' in l.get('class'):
+                continue
+
             url = l['href']
             if 'url.hulblog.com' in url:
                 url = decode_hulblog(url)
