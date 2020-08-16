@@ -11,13 +11,13 @@
 
 
 
-cat << EOF > mvfile.sh
+vi mvfile.sh
 #!/bin/sh
 file="../zip/$1"
 dir="$(dirname "$file")"
 [ -a "$dir" ] || mkdir -p "$dir" && mv "$1" "$file"
-EOF
 
+chmod 777 mvfile.sh
 
 
 
@@ -31,6 +31,7 @@ fd -tf "\.(7z|zip|rar)$" -0 | xargs -t0 -l ../mvfile.sh
 fd -td -te -X rm -rf
 
 
+cd ..
 cd unzip
 fd -tf "\.(part|torrent|url)$" -X rm
 
@@ -39,7 +40,7 @@ fd -td -te -X rm -rf
 
 
 
-
+cd ..
 ls mp3 > done-mp3.txt
 ls unzip > done-unzip.txt
 ls zip > done-zip.txt
@@ -48,19 +49,25 @@ ls zip > done-zip.txt
 zip=/bin/7z
 
 grep -vxFf <(cat done-mp3*.txt done-unzip*.txt) done-zip.txt > tounzip.txt
-cat tounzip.txt|while read l;do echo ---$l---;"$zip" x -aos -phulkpop.com -o"unzip-2\\$l" "zip\\$l\\*";done
+cat tounzip.txt|while read l;do echo ---$l---;"$zip" x -aos -phulkpop.com -o"unzip\\$l" "zip\\$l\\*";done
 
 
-
-ls unzip-2 > done-unzip-2.txt
-
+ls unzip > done-unzip.txt
 cat done-mp3* done-unzip*|sort|uniq > done.txt
 grep -h packageName added/* |dos2unix|sort > packages.txt
 cat packages.txt|awk '{a=substr($0,13);gsub(/[\/:?*><|]+/, "_", a);print $0"|"a}'|sort|uniq > packages-title.txt
 grep -vFf done.txt packages-title.txt > packages-notdone.txt
-mkdir added-notdone added-videos
-cat packages-notdone.txt | cut -f1 -d'|' | grep -l -Ff - added*/* -Z | xargs -0 mv -t added-notdone/
-egrep -l "^\[(DVD|Concert|Show|BD|Blu|Collect|Live)" added-notdone/* -Z | xargs -0 mv -t added-videos/
+grep -ivFf done.txt packages-notdone.txt > packages-notdone2.txt
+mkdir added-notdone
+cat packages-notdone2.txt | cut -f1 -d'|' | grep -l -Ff - added*/* -Z | xargs -0 mv -t added-notdone/
+
+
+# optionally move all videos to videos dir
+mkdir videos
+cd mp3
+ls | egrep -l "^\[(DVD|Concert|Show|BD|Blu|Collect|Live)" -Z | xargs -0 mv -t ../videos/
+cd ../unzip
+ls | egrep -l "^\[(DVD|Concert|Show|BD|Blu|Collect|Live)" -Z | xargs -0 mv -t ../videos/
 
 
 

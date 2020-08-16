@@ -1,6 +1,11 @@
+###
+'''
+Find duplicates and prompts or remove
+
+'''
+
 import os
 import sys
-from pprint import pprint
 import pandas as pd
 import re
 from send2trash import send2trash
@@ -10,6 +15,7 @@ print_detail=True
 confirm_delete=True
 
 
+### code below
 
 def getalbum(f):
     f = re.sub(r'\[.*?\]','',f).strip()
@@ -57,26 +63,28 @@ def select_best(group):
 
 
 
-pd.set_option('max_colwidth', -1)
+pd.set_option('max_colwidth', None)
 pd.set_option('expand_frame_repr', False)
-pd.set_option('max_rows', -1)
+pd.set_option('max_rows', None)
 
 
 root = sys.argv[1]
-allfiles = [[d[len(root)+1:],f] for d,_,files in os.walk(root) for f in files]
+re_music=re.compile(r"\.(mp3|m4a|flac|wav|ape)$")
+allfiles = [[d[len(root)+1:],f] for d,_,files in os.walk(root) for f in files if re_music.search(f)]
 dd = pd.DataFrame(allfiles, columns=['dir','file'])
 dd['album'] = dd['file'].apply(getalbum)
 dd['track'] = dd['file'].apply(gettrack)
 dd['ext'] = dd['file'].apply(getext)
 dd['size']=None
 dd = dd[~dd['track'].isnull()]
+dd['len'] = dd['file'].apply(lambda f: len(f))
+dd['nospace'] = dd['file'].apply(lambda f: ' ' in f)
 
 
 dup = dd[dd.duplicated(['dir','album','track','ext'], keep=False)]
 dup = dup.apply(getsize, axis=1)
-dup['len'] = dup['file'].apply(lambda f: len(f))
 dup['fullname'] = dup[['dir', 'file']].apply(lambda s:'/'.join(s), axis=1)
-dup = dup.sort_values(['dir','album','track','len','file'])
+dup = dup.sort_values(['dir','album','track','nospace','len','file'], ascending=[True,True,True,False,False,True])
 dup2 = dup[dup.duplicated(['dir','album','track','ext','size'], keep=False)]
 
 
@@ -101,9 +109,23 @@ if confirm_delete:
         send2trash(fn)
 
 
+
+
 print('\nduplicate dir:\n===========')
 dup3 = dup[~dup.index.isin(dup2.index)]
-dup3 = dup3.drop_duplicates('dir')
-dup3['dir'].to_csv('dups/dup_dir.csv', header=False, index=False)
-print(dup3['dir'])
+dup4 = dup3.drop_duplicates('dir')
+dup4['dir'].to_csv('dups/dup_dir.csv', header=False, index=False)
+print(dup4['dir'])
 # print(dup.drop_duplicates().to_string(index=False))
+
+best = pd.DataFrame(columns=dup.columns)
+for n,g in dup3.groupby(['dir','album','track','ext']):
+    best = best.append(select_best(g))
+best['fullname'].to_csv('dups/tokeep2.csv', header=False, index=False)
+
+toremove = dup3[~dup3.index.isin(best.index)]
+toremove['fullname'].to_csv('dups/toremove2.csv', header=False, index=False)
+if confirm_delete:
+    for i,row in toremove[['fullname']].iterrows():
+        fn = os.path.normpath(os.path.join(root,'/'.join(row)))
+        send2trash(fn)

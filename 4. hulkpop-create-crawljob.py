@@ -1,6 +1,13 @@
+###
+'''
+Create crawljobs for jdownloader
+
+'''
+
 import pandas as pd
 import dask.dataframe as dd
 from tqdm import tqdm
+from collections import defaultdict
 
 tags = ['MP3','FLAC','ITUNES','APE','WAV','Zip']
 def create_createjob(row):
@@ -18,14 +25,14 @@ def create_createjob(row):
                     nocds.append(s)
 
             for cd,urls in cds.items():
-                filename = 'crawljob/hulkpop-%05d-%s-%s.crawljob' % (row.name + 8000, tag, cd)
+                filename = 'crawljob/hulkpop-%05d-%s-%s.crawljob' % (row.name, tag, cd)
                 with open(filename, mode='w', encoding='utf8') as f:
                     f.write('packageName=%s (%s) %s\n' % (row['title'], tag, cd))
                     f.write('text=' + ' '.join(urls) + '\n')
                     f.write('comment=' + row['url'] + '\n')
 
             if nocds:
-                filename = 'crawljob/hulkpop-%05d-%s.crawljob' % (row.name + 8000, tag)
+                filename = 'crawljob/hulkpop-%05d-%s.crawljob' % (row.name, tag)
                 with open(filename, mode='w', encoding='utf8') as f:
                     f.write('packageName='+row['title']+' ('+tag+')\n')
                     f.write('text='+' '.join(nocds)+'\n')
@@ -36,6 +43,7 @@ def create_createjob(row):
 
 
 df = dd.read_csv('out/hulkpop-links-*.csv', encoding='UTF-8', dtype='object', keep_default_na=False).compute()
+df = df[df['error']!='True']
 df.index = pd.RangeIndex(0,len(df))
 
 pbar = tqdm(total=len(df), ncols=80)

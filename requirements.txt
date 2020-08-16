@@ -1,4 +1,10 @@
-dask
+#dask
+dask[dataframe]
 pandas
 beautifulsoup4
+lxml
 send2trash
+fuzzywuzzy
+python-Levenshtein-wheels
+tqdm
+requests
